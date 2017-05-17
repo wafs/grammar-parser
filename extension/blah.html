@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <style>
+
+        .node circle {
+            fill: #fff;
+            stroke: steelblue;
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+        }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 2px;
+        }
+
+        .node .field {
+            font-family: "Courier New", Courier, monospace;
+            font-weight: bold;
+        }
+
+        .node .value {
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .node .null {
+            fill: gray;
+            font-style: italic;
+        }
+
+        pre{
+            margin:0;
+        }
+    </style>
+
+
+</head>
+<body>
+
+<textarea style="border:1px solid black;" id="text">
+
+</textarea>
+
+<form id="view-form">
+    <div>
+        <label for="input-stack-view">Stack</label>
+        <input type="radio" id="input-stack-view" value="STACK" name="current-view">
+    </div>
+
+    <div>
+        <label for="input-tree-view">Tree</label>
+        <input type="radio" id="input-tree-view" value="TREE" name="current-view" checked>
+    </div>
+</form>
+
+
+<div id="tree-view">
+
+</div>
+
+<pre style="display:none;color:white;background-color: #343434;" id="stack-view"></pre>
+<pre style="display:none;color:white;background-color: #343434;" id="stack-status"></pre>
+
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="build/main_for_web.js"></script>
+
+<script>
+
+
+  const input_element = document.getElementById('text')
+  const stack_view    = document.getElementById('stack-view')
+  const stack_status  = document.getElementById('stack-status')
+  const tree_view     = document.getElementById('tree-view')
+  let last_data       = null
+
+  const update_functions = {
+    STACK: data => {
+
+      const max_pad_length = data.history[0].remaining.length
+
+      stack_view.innerHTML = data.history.map(
+        x => x.remaining + " ".repeat(max_pad_length - x.remaining.length + 1) + "\t" + x.stack
+      ).join("\n")
+
+      stack_status.innerHTML             = data.accepted ? 'ACCEPTED' : 'REJECTED'
+      stack_status.style.backgroundColor = data.accepted ? 'green' : 'red'
+    },
+    TREE : data => {
+      const tree_data = treeify(data.tree.filter(x => typeof x !== 'string'))
+      draw(tree_data)
+    }
+  }
+
+  let current_function = update_functions.TREE
+
+  document.getElementById('view-form').onchange = e => {
+    const value                = e.target.value
+    stack_view.style.display   = value === 'STACK' ? 'block' : 'none'
+    stack_status.style.display = value === 'STACK' ? 'block' : 'none'
+    tree_view.style.display    = value === 'TREE' ? 'block' : 'none'
+    current_function           = update_functions[value]
+
+    last_data && current_function(last_data)
+  }
+
+
+  input_element.addEventListener('input', e => {
+    last_data = parser(e.target.value.trim())
+    current_function(last_data)
+  })
+
+
+  /////////////
+
+
+  function treeify(data, field = '') {
+    if (data === null) {
+      return {}
+    }
+    const out = {}
+    let keys  = Object.keys(data)
+
+    out.field    = field || 'root'
+    out.label    = data.label
+    out.children = []
+    out.type     = 'variable'
+
+    for (const key of keys) {
+      if (key !== 'label') {
+        if (data[key] === null) {
+          out.children.push({field: key, label: 'null', type: 'null'})
+        }
+        else if (typeof data[key] !== 'object') {
+          out.children.push({label: data[key], type: 'value'})
+        }
+        else {
+          out.children.push(treeify(data[key], key))
+        }
+      }
+    }
+
+    return out
+  }
+
+
+  function draw(tree_data) {
+
+
+    const old = document.getElementById('__tree__')
+    old && old.parentNode.removeChild(old)
+
+    // set the dimensions and margins of the diagram
+    var margin = {top: 40, right: 90, bottom: 50, left: 90},
+        width  = 1000 - margin.left - margin.right,
+        height = 750 - margin.top - margin.bottom;
+
+    // declares a tree layout and assigns the size
+    var treemap = d3.tree().size([width, height]);
+
+    //  assigns the data to a hierarchy using parent-child relationships
+    var nodes = d3.hierarchy(tree_data);
+
+
+    // maps the node data to the tree layout
+    nodes = treemap(nodes);
+
+    // append the svg obgect to the body of the page
+    // appends a 'group' element to 'svg'
+    // moves the 'group' element to the top left margin
+    var svg = d3.select("#tree-view").append("svg")
+          .attr('id', '__tree__')
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom),
+        g   = svg.append("g")
+          .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    // adds the links between the nodes
+    var link = g.selectAll(".link")
+      .data(nodes.descendants().slice(1))
+      .enter().append("path")
+      .attr("class", "link")
+      .attr("d", function (d) {
+        return "M" + d.x + "," + d.y
+          + "C" + d.x + "," + (d.y + d.parent.y) / 2
+          + " " + d.parent.x + "," + (d.y + d.parent.y) / 2
+          + " " + d.parent.x + "," + d.parent.y;
+      });
+
+    // adds each node as a group
+    var node = g.selectAll(".node")
+      .data(nodes.descendants())
+      .enter().append("g")
+      .attr("class", function (d) {
+        return "node" +
+          (d.children ? " node--internal" : " node--leaf");
+      })
+      .attr("transform", function (d) {
+        return "translate(" + d.x + "," + d.y + ")";
+      });
+
+    // adds the circle to the node
+    node.append("circle")
+      .attr("r", 10);
+
+    // adds the text to the node
+    node.append("text")
+      .attr('class', function (d) {
+        return d.data.type + ' label'
+      })
+      .attr("dy", ".35em")
+      .attr("y", function (d) {
+        if (d.data.type === 'null') {
+          return 35;
+        }
+
+        if (d.data.type === 'value') {
+          return 25;
+        }
+
+        return d.children ? -20 : 20;
+      })
+      .style("text-anchor", "middle")
+      .text(function (d) {
+        return d.data.label;
+      });
+
+    node.append("text")
+      .attr('class', function (d) {
+        return d.data.type + ' field'
+      })
+      .attr("dy", ".35em")
+      .attr("y", function (d) {
+        return d.children ? -35 : 20;
+      })
+      .style("text-anchor", "middle")
+      .text(function (d) {
+        return d.data.field;
+      });
+
+
+  }
+
+
+</script>
+
+</body>
+</html>
+
+
