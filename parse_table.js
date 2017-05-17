@@ -1,5 +1,5 @@
-const END_OF_STACK = '$'
-const START_SYMBOL = 'P'
+const stack_end = '$'
+const start_symbol = 'P'
 
 const table = {
   P: {
@@ -14,7 +14,7 @@ const table = {
     'p'           : ['L', 'R'],
     'i'           : ['L', 'R'],
     '}'           : [],
-    [END_OF_STACK]: []
+    [stack_end]: []
   },
   N: {
     'p': ['p', 'r', 'i', 'n', 't', 'M']
@@ -38,7 +38,7 @@ const table = {
     'i'           : [],
     'e'           : ['e', 'l', 's', 'e', '{', 'P', '}'],
     '}'           : [],
-    [END_OF_STACK]: []
+    [stack_end]: []
   },
 
   E: {
@@ -76,6 +76,7 @@ const table = {
   }
 }
 
+// Create a hash map of terminals where all the values are true, so it can be looked up in O(1)
 const terminals = [
   '+-*',
   '{}',
@@ -89,8 +90,8 @@ const terminals = [
 }, {})
 
 module.exports = {
-  END_OF_STACK,
-  START_SYMBOL,
+  stack_end,
+  start_symbol,
   table,
   terminals
 }
