@@ -414,12 +414,15 @@ const start_symbol = 'P';
 const table = {
   P: {
     'p': ['L', 'R'],
-    'i': ['L', 'R']
+    'i': ['L', 'R'],
+    '@': ['L', 'R']
   },
   L: {
     'p': ['N', ';'],
-    'i': ['C']
+    'i': ['C'],
+    '@': ['G', ';']
   },
+
   R: {
     'p': ['L', 'R'],
     'i': ['L', 'R'],
@@ -487,7 +490,7 @@ const table = {
 };
 
 // Create a hash map of terminals where all the values are true, so it can be looked up in O(1)
-const terminals = ['+-*', '{}', '()', 'abcd', '0123', 'if', 'else', 'print', ';', '"'].reduce((obj, next) => {
+const terminals = ['+-*=@', '{}', '()', 'abcd', '0123', 'if', 'else', 'print', ';', '"'].reduce((obj, next) => {
   next.split('').forEach(x => obj[x] = true);
   return obj;
 }, {});

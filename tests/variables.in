@@ -1,0 +1,8 @@
+@baa = 2;
+
+if 1 {
+    @baa = 0;
+    print @baa;
+}
+
+print @baa;
