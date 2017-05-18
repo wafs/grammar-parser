@@ -5,4 +5,4 @@ if 1 {
     print @baa;
 }
 
-print @baa;
+print @bab;
