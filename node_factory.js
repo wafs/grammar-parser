@@ -14,33 +14,6 @@ const nodes = require('./nodes.js')
  */
 function nodeFactory({label, children = []}) {
   switch (label) {
-
-    case 'F':
-      // Variable
-      return new nodes.VariableNode(children[1]);
-      console.log({label,children})
-      throw new Error()
-      return null
-    case 'G':
-      return new nodes.VariableAssignmentNode(children[0],children[2])
-    case 'H':
-      if(children.length === 0){
-        return null
-      }
-      else if (children.length === 1) {
-        return new nodes.VariableNameSequenceNode(children[0])
-
-      }
-      else { // length must be 2
-        return new nodes.VariableNameSequenceNode(children[0], children[1])
-      }
-
-
-
-
-      // Variable Name
-      return null
-
     case 'V':
       return new nodes.NumberNode(children[0])
     case 'E':
@@ -50,7 +23,6 @@ function nodeFactory({label, children = []}) {
       if (children[0] === '(') {
         return new nodes.BinaryExpressionNode(children[1], children[2], children[3])
       }
-
       throw new Error("Problem resolving E")
 
     case 'N':

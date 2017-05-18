@@ -11,6 +11,4 @@ const { mix } = require('laravel-mix');
  |
  */
 
-mix.disableNotifications()
-
 mix.js('main_for_web.js', '/build')

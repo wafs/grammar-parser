@@ -12,45 +12,6 @@
  */
 
 
-class VariableStack{
-  constructor(){
-    this.stack = [{}]
-  }
-
-  pushScope(){
-    this.stack.push({})
-  }
-
-  popScope(){
-    if(this.stack.length > 1){
-      this.stack.pop()
-    }
-  }
-
-  getVariable(name){
-    let level = this.stack.length - 1;
-
-
-    while(level >= 0){
-      if(this.stack[level].hasOwnProperty(name)){
-        return this.stack[level][name]
-      }
-
-      level--;
-    }
-
-    throw new Error(`No variable named '${name}'`)
-  }
-
-  setVariable(name,value){
-    this.stack[this.stack.length - 1][name] = value
-  }
-
-}
-
-const variable_stack = new VariableStack()
-
-
 class Node {
   constructor(label) {
     this.label = label
@@ -108,16 +69,11 @@ class IfStatementNode extends Node {
 
   evaluate() {
     if (this.condition.evaluate()) {
-      variable_stack.pushScope()
       this.if_body.evaluate()
-      variable_stack.popScope()
-
     }
     else {
       if (this.else_body !== null) {
-        variable_stack.pushScope()
         this.else_body.evaluate()
-        variable_stack.popScope()
       }
     }
   }
@@ -224,49 +180,6 @@ class ValueNode extends Node {
   }
 }
 
-class VariableNameSequenceNode extends Node{
-  constructor(character_node, next) {
-    super("Variable Name Sequence")
-    this.character_node = character_node;
-    this.next        = next;
-  }
-
-  evaluate() {
-    if (!this.character_node) {
-      return ''
-    }
-    if (!this.next) {
-      return this.character_node.evaluate()
-    }
-
-    return this.character_node.evaluate() + this.next.evaluate()
-
-  }
-}
-
-class VariableNode extends Node{
-  constructor(name_node){
-    super("Variable")
-    this.name = name_node.evaluate();
-  }
-
-  evaluate(){
-    return variable_stack.getVariable(this.name)
-  }
-}
-
-class VariableAssignmentNode extends Node{
-  constructor(var_node, value_node){
-    super("Variable Assignment")
-    this.var_node = var_node
-    this.value = value_node
-  }
-
-  evaluate(){
-    variable_stack.setVariable(this.var_node.name, this.value.value.evaluate())
-  }
-}
-
 module.exports = {
   Node,
   LetterSequence,
@@ -279,8 +192,5 @@ module.exports = {
   CompoundStatementNode,
   StatementNode,
   PrintStatementNode,
-  ValueNode,
-  VariableNameSequenceNode,
-  VariableNode,
-  VariableAssignmentNode
+  ValueNode
 }
