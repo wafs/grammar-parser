@@ -1,8 +1,14 @@
-@baa = 2;
+@str = "string";
 
-if 1 {
-    @baa = 0;
-    print @baa;
+@val = 2;
+
+if @val {
+    @str = 2;
+
+    print @str;
 }
 
-print @bab;
+
+print @str;
+
+

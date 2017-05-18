@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 7);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -142,6 +142,28 @@ const nodes = __webpack_require__(2);
  */
 function nodeFactory({ label, children = [] }) {
   switch (label) {
+
+    case 'F':
+      // Variable
+      return new nodes.VariableNode(children[1]);
+      console.log({ label, children });
+      throw new Error();
+      return null;
+    case 'G':
+      return new nodes.VariableAssignmentNode(children[0], children[2]);
+    case 'H':
+      if (children.length === 0) {
+        return null;
+      } else if (children.length === 1) {
+        return new nodes.VariableNameSequenceNode(children[0]);
+      } else {
+        // length must be 2
+        return new nodes.VariableNameSequenceNode(children[0], children[1]);
+      }
+
+      // Variable Name
+      return null;
+
     case 'V':
       return new nodes.NumberNode(children[0]);
     case 'E':
@@ -151,6 +173,7 @@ function nodeFactory({ label, children = [] }) {
       if (children[0] === '(') {
         return new nodes.BinaryExpressionNode(children[1], children[2], children[3]);
       }
+
       throw new Error("Problem resolving E");
 
     case 'N':
@@ -228,6 +251,43 @@ module.exports = { nodeFactory };
  *  which will in turn evaluate its children , and its children's children, etc.
  */
 
+class VariableStack {
+  constructor() {
+    this.stack = [{}];
+  }
+
+  pushScope() {
+    this.stack.push({});
+  }
+
+  popScope() {
+    if (this.stack.length > 1) {
+      this.stack.pop();
+    }
+  }
+
+  getVariable(name) {
+    let level = this.stack.length - 1;
+
+    while (level >= 0) {
+      if (this.stack[level].hasOwnProperty(name)) {
+        return this.stack[level][name];
+      }
+
+      level--;
+    }
+
+    throw new Error(`No variable named '${name}'`);
+  }
+
+  setVariable(name, value) {
+    this.stack[this.stack.length - 1][name] = value;
+  }
+
+}
+
+const variable_stack = new VariableStack();
+
 class Node {
   constructor(label) {
     this.label = label;
@@ -283,10 +343,14 @@ class IfStatementNode extends Node {
 
   evaluate() {
     if (this.condition.evaluate()) {
+      variable_stack.pushScope();
       this.if_body.evaluate();
+      variable_stack.popScope();
     } else {
       if (this.else_body !== null) {
+        variable_stack.pushScope();
         this.else_body.evaluate();
+        variable_stack.popScope();
       }
     }
   }
@@ -389,6 +453,48 @@ class ValueNode extends Node {
   }
 }
 
+class VariableNameSequenceNode extends Node {
+  constructor(character_node, next) {
+    super("Variable Name Sequence");
+    this.character_node = character_node;
+    this.next = next;
+  }
+
+  evaluate() {
+    if (!this.character_node) {
+      return '';
+    }
+    if (!this.next) {
+      return this.character_node.evaluate();
+    }
+
+    return this.character_node.evaluate() + this.next.evaluate();
+  }
+}
+
+class VariableNode extends Node {
+  constructor(name_node) {
+    super("Variable");
+    this.name = name_node.evaluate();
+  }
+
+  evaluate() {
+    return variable_stack.getVariable(this.name);
+  }
+}
+
+class VariableAssignmentNode extends Node {
+  constructor(var_node, value_node) {
+    super("Variable Assignment");
+    this.var_node = var_node;
+    this.value = value_node;
+  }
+
+  evaluate() {
+    variable_stack.setVariable(this.var_node.name, this.value.value.evaluate());
+  }
+}
+
 module.exports = {
   Node,
   LetterSequence,
@@ -401,7 +507,10 @@ module.exports = {
   CompoundStatementNode,
   StatementNode,
   PrintStatementNode,
-  ValueNode
+  ValueNode,
+  VariableNameSequenceNode,
+  VariableNode,
+  VariableAssignmentNode
 };
 
 /***/ }),
@@ -422,10 +531,54 @@ const table = {
     'i': ['C'],
     '@': ['G', ';']
   },
+  G: {
+    '@': ['F', '=', 'M']
+  },
+  F: {
+    '@': ['@', 'H']
+  },
+
+  H: {
+
+    'a': ['T', 'H'],
+    'b': ['T', 'H'],
+    'c': ['T', 'H'],
+    'd': ['T', 'H'],
+    'e': ['T', 'H'],
+    'f': ['T', 'H'],
+    'g': ['T', 'H'],
+    'h': ['T', 'H'],
+    'i': ['T', 'H'],
+    'j': ['T', 'H'],
+    'k': ['T', 'H'],
+    'l': ['T', 'H'],
+    'm': ['T', 'H'],
+    'n': ['T', 'H'],
+    'o': ['T', 'H'],
+    'p': ['T', 'H'],
+    'q': ['T', 'H'],
+    'r': ['T', 'H'],
+    's': ['T', 'H'],
+    't': ['T', 'H'],
+    'u': ['T', 'H'],
+    'v': ['T', 'H'],
+    'w': ['T', 'H'],
+    'x': ['T', 'H'],
+    'y': ['T', 'H'],
+    'z': ['T', 'H'],
+    '=': [],
+    ';': [],
+    '{': [],
+    '+': [],
+    '-': [],
+    '*': [],
+    ')': []
+  },
 
   R: {
     'p': ['L', 'R'],
     'i': ['L', 'R'],
+    '@': ['L', 'R'],
     '}': [],
     [stack_end]: []
   },
@@ -439,7 +592,8 @@ const table = {
     '0': ['E'],
     '1': ['E'],
     '2': ['E'],
-    '3': ['E']
+    '3': ['E'],
+    '@': ['F']
   },
 
   C: {
@@ -459,7 +613,8 @@ const table = {
     '0': ['V'],
     '1': ['V'],
     '2': ['V'],
-    '3': ['V']
+    '3': ['V'],
+    '@': ['F']
   },
 
   O: {
@@ -478,19 +633,63 @@ const table = {
     'a': ['a'],
     'b': ['b'],
     'c': ['c'],
-    'd': ['d']
+    'd': ['d'],
+    'e': ['e'],
+    'f': ['f'],
+    'g': ['g'],
+    'h': ['h'],
+    'i': ['i'],
+    'j': ['j'],
+    'k': ['k'],
+    'l': ['l'],
+    'm': ['m'],
+    'n': ['n'],
+    'o': ['o'],
+    'p': ['p'],
+    'q': ['q'],
+    'r': ['r'],
+    's': ['s'],
+    't': ['t'],
+    'u': ['u'],
+    'v': ['v'],
+    'w': ['w'],
+    'x': ['x'],
+    'y': ['y'],
+    'z': ['z']
   },
   W: {
     '"': [],
     'a': ['T', 'W'],
     'b': ['T', 'W'],
     'c': ['T', 'W'],
-    'd': ['T', 'W']
+    'd': ['T', 'W'],
+    'e': ['T', 'W'],
+    'f': ['T', 'W'],
+    'g': ['T', 'W'],
+    'h': ['T', 'W'],
+    'i': ['T', 'W'],
+    'j': ['T', 'W'],
+    'k': ['T', 'W'],
+    'l': ['T', 'W'],
+    'm': ['T', 'W'],
+    'n': ['T', 'W'],
+    'o': ['T', 'W'],
+    'p': ['T', 'W'],
+    'q': ['T', 'W'],
+    'r': ['T', 'W'],
+    's': ['T', 'W'],
+    't': ['T', 'W'],
+    'u': ['T', 'W'],
+    'v': ['T', 'W'],
+    'w': ['T', 'W'],
+    'x': ['T', 'W'],
+    'y': ['T', 'W'],
+    'z': ['T', 'W']
   }
 };
 
 // Create a hash map of terminals where all the values are true, so it can be looked up in O(1)
-const terminals = ['+-*=@', '{}', '()', 'abcd', '0123', 'if', 'else', 'print', ';', '"'].reduce((obj, next) => {
+const terminals = ['+-*=@', '{}', '()', 'abcdefghijklmnopqrstuvwxyz', '0123', 'if', 'else', 'print', ';', '"'].reduce((obj, next) => {
   next.split('').forEach(x => obj[x] = true);
   return obj;
 }, {});
@@ -614,9 +813,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 5 */,
-/* 6 */,
-/* 7 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(0);
