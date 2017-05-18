@@ -68,5 +68,6 @@ try {
 }
 catch (e) {
   dumpLog();
+  console.log({e})
   console.log('REJECTED')
 }
